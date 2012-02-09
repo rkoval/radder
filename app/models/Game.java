@@ -106,6 +106,10 @@ public class Game extends Model {
 	}
 	
 	public static boolean isValidResult(Integer oneScore, Integer twoScore) {
+		if (oneScore == null || twoScore == null) {
+			return false;
+		}
+		
 		// You need at least 21 points to win
 		if (oneScore < 21 && twoScore < 21) { 
 			return false;
