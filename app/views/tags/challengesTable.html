@@ -8,6 +8,7 @@
 			<td>Challenged</td>
 			<td>Player One</td>
 			<td>Player Two</td>
+			<td>Talk</td>
 			<td>Score</td>
 			<td></td>
 		</tr>
@@ -21,6 +22,9 @@
 				</td>
 				<td>
 					<a href="/" onclick="userResults(${game.two.id}); return false;">${game.two}</a>
+				</td>
+				<td>
+					<a href="javascript:void(0);" class="toggleGameComments">......</a>
 				</td>
 				#{if game.scoreReporter != null}
 					<td>
@@ -50,6 +54,29 @@
 					#{/if}
 				#{/else}
 			</tr>
+			#{if game.one.email == session.username || game.two.email == session.username}
+				<tr id="gameRow${game.id}_comments" class="gameComments">
+					<td colspan="6">
+						<div id="commentsMessage"></div>
+				
+						<form id="postGameCommentForm" class="nice">
+							<input class="input-text" type="text" id="newGameComment" name="comment" />
+						</form>
+						
+						<script type="text/javascript">
+							$().ready(function() {
+								$('#newGameComment').val(''); // Firefox "feature"
+								
+								// Because the form only has one element, it will submit on <Enter> by default -- prevent it...
+								$('#postGameCommentForm').submit(function(e) { e.preventDefault(); return false; });
+								
+								// ... and do it with AJAX instead
+								$('#newGameComment').onEnter(function(){RADDER.postGameComment($('#newGameComment').val());});
+							});
+						</script>
+					</td>
+				</tr>
+			#{/if}
 		#{/list}
 	</tbody>
 </table>
@@ -60,5 +87,8 @@
 			$(this).val(''); // Firefox "feature"
 			$(this).clickButtonOnEnter($(this).parent().parent().next().find('a.logResultButton').attr('id'));
 		});
+	});
+	$('.toggleGameComments').click(function() {
+		$(this).parent().next('tr.gameComments').toggle();
 	});
 </script>
