@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils;
 import play.mvc.Controller;
 
 public class Application extends Controller {
-
+	
     public static void index() {
     	List<Player> players = Player.find("order by rating desc").fetch();
     	List<Game> games = Game.findAllResults().fetch();

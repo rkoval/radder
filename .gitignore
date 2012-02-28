@@ -11,3 +11,5 @@ logs/
 dist/
 bin/
 data/
+server.pid
+conf/env.properties

@@ -1,51 +1,57 @@
 package controllers;
 
+import javax.inject.Inject;
+import javax.naming.directory.DirContext;
+
 import models.Player;
-import play.libs.Crypto;
+
+import org.apache.commons.lang.StringUtils;
+import org.springframework.ldap.core.support.LdapContextSource;
+import org.springframework.ldap.support.LdapUtils;
 
 
 public class Security extends Secure.Security {
 	protected final static Double DEFAULT_RATING = 1500.0;
 	
-    public static void signup() {
-    	renderTemplate("Secure/signup.html");
-    }
-    
-    public static void createPlayer(String name, String email, String password, String passwordConfirm) {
-    	validation.required(name);
-    	validation.required(email);
-    	validation.email(email);
-    	validation.required(password);
-    	validation.equals(password, passwordConfirm);
-    	
-    	if (Player.find("byEmail", email).first() != null) { 
-    		validation.addError("email", "validation.emailAlreadyRegistered");
-    	}
-    	
-    	if (validation.hasErrors()) {
-    		params.flash();
-    		validation.keep();
-    		signup();
-    	}
-    	
-    	
+	@Inject private static LdapContextSource contextSource;
+	//@Inject private static LdapTemplate ldapTemplate;
+	
+    protected static void createPlayer(String email, String password) {
     	// Create the new player with the default rating
     	Player player = new Player();
-    	player.name = name;
+    	player.name = email.substring(0, email.indexOf('@'));
     	player.email = email;
-    	player.password = Crypto.passwordHash(password);
     	player.rating = DEFAULT_RATING;
     	player.save();
-    	
-    	// Log the user in automatically and return to the homepage
-    	session.put("username", email);
-    	onAuthenticated();
-    	Application.index();
     }
 	
 	static boolean authentify(String email, String password) {
-		Player player = Player.find("byEmail", email).first();
-        return player != null && player.password.equals(Crypto.passwordHash(password));
+		if (email.contains("\\") || StringUtils.isBlank(password)) {
+			return false;
+		}
+		
+    	Boolean ldapAuthenticated;
+    	
+    	DirContext ctx = null;
+    	try {
+    		ctx = contextSource.getContext(email, password);
+    	    ldapAuthenticated = true;
+    	} catch (Exception e) {
+    		ldapAuthenticated = false; // Context creation failed - authentication did not succeed
+    	} finally {
+    		LdapUtils.closeContext(ctx); // It is imperative that the created DirContext instance is always closed
+    	}
+    	
+    	//ldapAuthenticated = true;
+    	
+		if (ldapAuthenticated) { 
+			Player player = Player.find("byEmail", email).first();
+			if (player == null) { 
+				createPlayer(email, password);
+			}
+		}
+		
+		return ldapAuthenticated;
     }  
 	
 	static void onAuthenticated() {
